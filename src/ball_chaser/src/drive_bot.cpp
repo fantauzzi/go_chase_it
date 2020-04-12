@@ -59,4 +59,5 @@ int main(int argc, char **argv) {
  * give ciccio() a better name, perhaps use an operator()
  * check the warning on DriveToTarget
  * non-systematic issue with plug-in
+ * clean up logs/messages
 */

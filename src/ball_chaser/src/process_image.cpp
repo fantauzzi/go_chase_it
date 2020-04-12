@@ -22,7 +22,7 @@ public:
         subscriber = ROS_node.subscribe("/camera/rgb/image_raw", 10, &ProcessImage::process_image_callback, this);
     }
 
-    bool is_pixel_of_color(const std::vector<unsigned char> & data, int width, int row, int col, int color[3]) {
+    bool is_pixel_of_color(const std::vector<unsigned char> &data, int width, int row, int col, int color[3]) {
         for (int i = 0; i < 3; ++i)
             if (data[width * row * 3 + col * 3 + i] != color[i])
                 return false;
@@ -41,8 +41,10 @@ public:
         // Partition the image in three vertical bands of (roughly) the same width
         int w = img.width;
         int h = img.height;
-        int third_1 = static_cast<int>(round(w / 3.));
-        int third_2 = static_cast<int>(round(w * 2 / 3.));
+        // int third_1 = static_cast<int>(round(w / 3.));
+        // int third_2 = static_cast<int>(round(w * 2 / 3.));
+        int third_1 = static_cast<int>(round(w * .45));
+        int third_2 = static_cast<int>(round(w * .55));
 
         // Count the number of pixels with target color in each vertical band (third of the image)
         int count_left = 0;
@@ -63,11 +65,12 @@ public:
          * all in the right or left band, drive in that direction; if they are nowhere to be found, stop the robot */
 
         double total = count_left + count_middle + count_right;
-        if (total == 0 || (count_middle>=.98*(third_2-third_1)*h))
+        if (total == 0)
             drive(0, 0);
         else {
-            double angular_speed = - max_angular_speed * count_right / total + max_angular_speed * count_left / total;
-            double linear_speed = max_linear_speed * count_middle / total;
+            double angular_speed = -max_angular_speed * count_right / total + max_angular_speed * count_left / total;
+            double middle_white_ratio = static_cast<double>(count_middle) /((third_2 - third_1) * h);
+            double linear_speed = (middle_white_ratio < .95) ? max_linear_speed * count_middle / total: .0;
             drive(linear_speed, angular_speed);
         }
     }
@@ -93,3 +96,8 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
+/* TODO
+ * Code clean-up + Comments/in-line documentation
+ * Write the README.md
+ */
