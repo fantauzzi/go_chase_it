@@ -1,63 +1,56 @@
 #include "ros/ros.h"
 #include "geometry_msgs/Twist.h"
 #include "ball_chaser/DriveToTarget.h"
-//DONE: Include the ball_chaser "DriveToTarget" header file
-
-// TODO: Create a handle_drive_request callback function that executes whenever a drive_bot service is requested
-// This function should publish the requested linear x and angular velocities to the robot wheel joints
-// After publishing the requested velocities, a message feedback should be returned with the requested wheel velocities
-
 
 class DriveToTarget {
 
 public:
-    DriveToTarget(const ros::NodeHandle &node_handle) : ROS_node(node_handle) {
-        motor_command_publisher = ROS_node.advertise<geometry_msgs::Twist>("/cmd_vel", 10);
-        service = ROS_node.advertiseService("/ball_chaser/command_robot", &DriveToTarget::ciccio, this);
+    /**
+     * Instantiates the implementation for the ROS node that drives toward the white ball.
+     * @param node_handle Handle to the ROS node.
+     */
+    explicit DriveToTarget(const ros::NodeHandle &node_handle) : ros_node(node_handle) {
+        motor_command_publisher = ros_node.advertise<geometry_msgs::Twist>("/cmd_vel", 10);
+        command_robot_service = ros_node.advertiseService("/ball_chaser/command_robot", &DriveToTarget::operator(), this);
     }
 
-    bool ciccio(ball_chaser::DriveToTarget::Request &req,
+    /**
+     * Call-back that receives and executes the /ball_chaser/command_robot service requests.
+     * @param req The service request.
+     * @param res The service response.
+     * @return True.
+     */
+    bool operator()(ball_chaser::DriveToTarget::Request &req,
                 ball_chaser::DriveToTarget::Response &res) {
         geometry_msgs::Twist motor_command;
         motor_command.linear.x = req.linear_x;
         motor_command.angular.z = req.angular_z;
-        // Publish angles to drive the robot
         motor_command_publisher.publish(motor_command);
-        res.msg_feedback = "motor command set with linear_x=" + std::to_string(req.linear_x) + " angular_x=" +
+        res.msg_feedback = "Motor command set with linear_x=" + std::to_string(req.linear_x) + " angular_x=" +
                            std::to_string(req.angular_z);
-        ROS_INFO_STREAM(res.msg_feedback);
+        ROS_DEBUG("Motor command set with linear_x=%f angular_x=%f",motor_command.linear.x, motor_command.angular.z);
 
         return true;
     }
 
 private:
-    ros::NodeHandle ROS_node;
+    ros::NodeHandle ros_node;
     ros::Publisher motor_command_publisher;
-    ros::ServiceServer service;
+    ros::ServiceServer command_robot_service;
 };
 
 int main(int argc, char **argv) {
-    // Initialize a ROS node
+    // Initialize the ROS node
     ros::init(argc, argv, "drive_bot");
 
-    // Create a ROS NodeHandle object
-    ros::NodeHandle n;
+    // Create the node implementation
+    ros::NodeHandle node;
+    DriveToTarget drive_to_target(node);
 
-    auto drive_to_target = DriveToTarget(n);
+    ROS_INFO("Ready to receive drive commands.");
 
-    // DONE: Define a drive /ball_chaser/command_robot service with a handle_drive_request callback function
-    ROS_INFO("Ready to receive drive commands");
-
-    // DONE: Delete the loop, move the code to the inside of the callback function and make the necessary changes to publish the requested velocities instead of constant values
+    // Get to work!
     ros::spin();
-    // DONE: Handle ROS communication events
 
     return 0;
 }
-
-/* TODO:
- * give ciccio() a better name, perhaps use an operator()
- * check the warning on DriveToTarget
- * non-systematic issue with plug-in
- * clean up logs/messages
-*/
